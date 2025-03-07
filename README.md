@@ -5,7 +5,7 @@ A Node.js backend service for connecting to Apache Cassandra.
 ## Setup
 
 1. Install dependencies:
-   ```bash
+```bash
    npm install
 ```
  
