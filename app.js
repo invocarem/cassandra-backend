@@ -1,3 +1,4 @@
+const cassandra = require('cassandra-driver');
 const express = require('express');
 const cors = require('cors');
 const client = require('./config/cassandra');
@@ -30,6 +31,53 @@ app.post('/todos', async (req, res) => {
     res.status(201).json({ id, title, description, is_completed: false });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create todo' });
+  }
+});
+
+app.put('/todos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, description, is_completed } = req.body;
+  console.log("update: " +title + ":" + description + ":" + is_completed);
+  // Validate required fields (adjust as needed)
+  if (!title && !description && typeof is_completed === 'undefined') {
+    return res.status(400).json({ error: "No fields to update" });
+  }
+
+  try {
+    // Build the CQL query dynamically based on provided fields
+    const updates = [];
+    const params = [];
+    
+    if (typeof title !== 'undefined') {
+      updates.push('title = ?');
+      params.push(title);
+    }
+    
+    if (typeof description !== 'undefined') {
+      updates.push('description = ?');
+      params.push(description);
+    }
+    
+    if (typeof is_completed !== 'undefined') {
+      updates.push('is_completed = ?');
+      params.push(is_completed);
+    }
+
+    // Add the todo ID to the parameters
+    params.push(id);
+
+    // Construct the query
+    const query = `
+      UPDATE todos 
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `;
+
+    await client.execute(query, params, { prepare: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Update Error:", error);
+    res.status(500).json({ error: 'Failed to update todo' });
   }
 });
 
